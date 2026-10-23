@@ -1,5 +1,7 @@
 # docker-ondrej-php
 
+[![build](https://github.com/NathanAdhitya/docker-ondrej-php/actions/workflows/build.yml/badge.svg)](https://github.com/NathanAdhitya/docker-ondrej-php/actions/workflows/build.yml)
+
 PHP 7.4-FPM on Debian Trixie, built from [Ondřej Surý's](https://packages.sury.org/php/) packages
 (php2shell fixes included, hopefully). Partially AI-assisted.
 
