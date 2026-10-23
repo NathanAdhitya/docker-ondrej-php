@@ -54,4 +54,4 @@ STOPSIGNAL SIGQUIT
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD ["php", "-r", "$s = @fsockopen('127.0.0.1', 9000, $errno, $errstr, 2); if (!$s) { fwrite(STDERR, \"php-fpm is not accepting connections on 9000\\n\"); exit(1); } fclose($s);"]
 
-CMD ["php-fpm7.4", "-F"]
+CMD ["php-fpm7.4"]
