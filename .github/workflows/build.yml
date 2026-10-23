@@ -1,0 +1,72 @@
+name: build
+
+on:
+  schedule:
+    # Rebuild nightly so upstream sury/packages.sury.org updates are picked up.
+    - cron: "0 3 * * *"
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build-test-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=7.4
+          labels: |
+            org.opencontainers.image.title=PHP 7.4 FPM (Ondřej Surý, trixie)
+            org.opencontainers.image.description=PHP 7.4-FPM built from Ondřej Surý's packages on Debian trixie
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: docker/7.4
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test
+        run: |
+          ./tests/smoke.sh "$(echo "${{ steps.meta.outputs.tags }}" | head -n1)" 7.4
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish :7.4
+        if: github.event_name != 'pull_request'
+        run: |
+          tag="$(echo "${{ steps.meta.outputs.tags }}" | head -n1)"
+          docker push "$tag"
+          echo "published \`$tag\` (amd64)" >> "$GITHUB_STEP_SUMMARY"
